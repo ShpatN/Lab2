@@ -1,3 +1,4 @@
 <Solution>
+  <Project Path="../PrishtinaNights.Core/PrishtinaNights.Core.csproj" Id="7e5a29d5-d706-4acd-95be-45b23a3ff4bf" />
   <Project Path="PrishtinaNights.API.csproj" />
 </Solution>
