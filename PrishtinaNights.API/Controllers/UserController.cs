@@ -1,12 +1,13 @@
 ﻿using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.Authorization;
 using PrishtinaNights.Core.Services.Interfaces;
 using PrishtinaNights.Core.DTOs;
-using PrishtinaNights.Core.Models;
 
 namespace PrishtinaNights.API.Controllers
 {
     [Route("api/[controller]")]
     [ApiController]
+    [Authorize] // 🔐 All endpoints require JWT
     public class UserController : ControllerBase
     {
         private readonly IUserService _userService;
@@ -16,7 +17,7 @@ namespace PrishtinaNights.API.Controllers
             _userService = userService;
         }
 
-        // GET: api/user
+        //  GET ALL USERS
         [HttpGet]
         public async Task<IActionResult> GetAll()
         {
@@ -24,7 +25,7 @@ namespace PrishtinaNights.API.Controllers
             return Ok(users);
         }
 
-        // GET: api/user/5
+        //  GET USER BY ID
         [HttpGet("{id}")]
         public async Task<IActionResult> GetById(int id)
         {
@@ -36,24 +37,18 @@ namespace PrishtinaNights.API.Controllers
             return Ok(user);
         }
 
-        // POST: api/user
-        [HttpPost]
-        public async Task<IActionResult> Create([FromBody] UserDTO userDto)
-        {
-            await _userService.AddAsync(userDto);
-            return Ok("User created successfully");
-        }
-
-        // PUT: api/user
+        //  UPDATE USER (ADMIN ONLY)
         [HttpPut]
+        [Authorize(Roles = "Admin")]
         public async Task<IActionResult> Update([FromBody] UserDTO userDto)
         {
             await _userService.UpdateAsync(userDto);
             return Ok("User updated successfully");
         }
 
-        // DELETE: api/user/5
+        //  DELETE USER (ADMIN ONLY)
         [HttpDelete("{id}")]
+        [Authorize(Roles = "Admin")]
         public async Task<IActionResult> Delete(int id)
         {
             var exists = await _userService.ExistsAsync(id);
