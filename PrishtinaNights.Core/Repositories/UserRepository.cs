@@ -16,6 +16,8 @@ namespace PrishtinaNights.Core.Repositories
             _users = _context.Set<User>();
         }
 
+        // ================= BASIC CRUD =================
+
         public async Task<IEnumerable<User>> GetAllAsync()
         {
             return await _users.AsNoTracking().ToListAsync();
@@ -24,15 +26,13 @@ namespace PrishtinaNights.Core.Repositories
         public async Task<User?> GetByIdAsync(int id)
         {
             return await _users
-                .AsNoTracking()
                 .FirstOrDefaultAsync(u => u.Id == id);
         }
 
         public async Task<User?> GetByEmailAsync(string email)
         {
             return await _users
-                .AsNoTracking()
-                .FirstOrDefaultAsync(u => u.Email == email);
+                .FirstOrDefaultAsync(u => u.Email == email); // no AsNoTracking (needed for auth)
         }
 
         public async Task AddAsync(User user)
@@ -43,7 +43,18 @@ namespace PrishtinaNights.Core.Repositories
 
         public async Task UpdateAsync(User user)
         {
-            _users.Update(user);
+            var existing = await _users.FindAsync(user.Id);
+
+            if (existing == null)
+                throw new Exception("User not found");
+
+            // Update fields manually
+            existing.FirstName = user.FirstName;
+            existing.LastName = user.LastName;
+            existing.Email = user.Email;
+            existing.IsActive = user.IsActive;
+            existing.UpdatedAt = user.UpdatedAt;
+
             await _context.SaveChangesAsync();
         }
 
@@ -60,6 +71,32 @@ namespace PrishtinaNights.Core.Repositories
         public async Task<bool> ExistsAsync(int id)
         {
             return await _users.AnyAsync(u => u.Id == id);
+        }
+
+        // ================= ROLES =================
+
+        public async Task<List<string>> GetUserRolesAsync(int userId)
+        {
+            return await _context.UserRoles
+                .Where(ur => ur.UserId == userId)
+                .Include(ur => ur.Role)
+                .Select(ur => ur.Role.Name)
+                .ToListAsync();
+        }
+
+        // ================= PERMISSIONS =================
+
+        public async Task<List<string>> GetUserPermissionsAsync(int userId)
+        {
+            return await _context.UserRoles
+                .Where(ur => ur.UserId == userId)
+                .Include(ur => ur.Role)
+                    .ThenInclude(r => r.RolePermissions)
+                        .ThenInclude(rp => rp.Permission)
+                .SelectMany(ur => ur.Role.RolePermissions)
+                .Select(rp => rp.Permission.Name)
+                .Distinct()
+                .ToListAsync();
         }
     }
 }

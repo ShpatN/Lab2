@@ -11,5 +11,7 @@ namespace PrishtinaNights.Core.Repositories.Interfaces
         Task UpdateAsync(User user);
         Task DeleteAsync(int id);
         Task<bool> ExistsAsync(int id);
+        Task<List<string>> GetUserRolesAsync(int userId);
+        Task<List<string>> GetUserPermissionsAsync(int userId);
     }
 }
