@@ -4,10 +4,10 @@ namespace PrishtinaNights.Core.Services.Interfaces
 {
     public interface IVenueService
     {
-        Task<IEnumerable<VenueDto>> GetAllAsync();
-        Task<VenueDto?> GetByIdAsync(int id);
-        Task<VenueDto> CreateAsync(CreateVenueDto dto);
-        Task<VenueDto?> UpdateAsync(int id, UpdateVenueDto dto);
+        Task<IEnumerable<VenueDTO>> GetAllAsync();
+        Task<VenueDTO?> GetByIdAsync(int id);
+        Task<VenueDTO> CreateAsync(CreateVenueDTO dto);
+        Task<VenueDTO?> UpdateAsync(int id, UpdateVenueDTO dto);
         Task<bool> DeleteAsync(int id);
     }
 }

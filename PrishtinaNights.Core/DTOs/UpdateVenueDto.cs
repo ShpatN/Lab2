@@ -2,7 +2,7 @@ using System.ComponentModel.DataAnnotations;
 
 namespace PrishtinaNights.Core.DTOs
 {
-    public class UpdateVenueDto
+    public class UpdateVenueDTO
     {
         [Required(ErrorMessage = "Name is required")]
         [StringLength(100, ErrorMessage = "Name can't exceed 100 characters")]

@@ -1,6 +1,6 @@
 namespace PrishtinaNights.Core.DTOs
 {
-    public class VenueDto
+    public class VenueDTO
     {
         public int Id { get; set; }
         public string Name { get; set; } = string.Empty;

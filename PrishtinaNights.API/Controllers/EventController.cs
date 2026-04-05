@@ -6,55 +6,50 @@ namespace PrishtinaNights.API.Controllers
 {
     [ApiController]
     [Route("api/[controller]")]
-    public class VenueController : ControllerBase
+    public class EventController : ControllerBase
     {
-        private readonly IVenueService _venueService;
+        private readonly IEventService _eventService;
 
-        public VenueController(IVenueService venueService)
+        public EventController(IEventService eventService)
         {
-            _venueService = venueService;
+            _eventService = eventService;
         }
 
-        // GET: api/venue
         [HttpGet]
         public async Task<IActionResult> GetAll()
         {
-            var venues = await _venueService.GetAllAsync();
-            return Ok(venues);
+            var events = await _eventService.GetAllAsync();
+            return Ok(events);
         }
 
-        // GET: api/venue/{id}
         [HttpGet("{id}")]
         public async Task<IActionResult> GetById(int id)
         {
-            var venue = await _venueService.GetByIdAsync(id);
+            var ev = await _eventService.GetByIdAsync(id);
 
-            if (venue == null)
+            if (ev == null)
                 return NotFound();
 
-            return Ok(venue);
+            return Ok(ev);
         }
 
-        // POST: api/venue
         [HttpPost]
-        public async Task<IActionResult> Create([FromBody] CreateVenueDTO dto)
+        public async Task<IActionResult> Create([FromBody] CreateEventDTO dto)
         {
             if (!ModelState.IsValid)
                 return BadRequest(ModelState);
 
-            var created = await _venueService.CreateAsync(dto);
-
+            var created = await _eventService.CreateAsync(dto);
             return CreatedAtAction(nameof(GetById), new { id = created.Id }, created);
         }
 
-        // PUT: api/venue/{id}
         [HttpPut("{id}")]
-        public async Task<IActionResult> Update(int id, [FromBody] UpdateVenueDTO dto)
+        public async Task<IActionResult> Update(int id, [FromBody] UpdateEventDTO dto)
         {
             if (!ModelState.IsValid)
                 return BadRequest(ModelState);
 
-            var updated = await _venueService.UpdateAsync(id, dto);
+            var updated = await _eventService.UpdateAsync(id, dto);
 
             if (updated == null)
                 return NotFound();
@@ -62,11 +57,10 @@ namespace PrishtinaNights.API.Controllers
             return Ok(updated);
         }
 
-        // DELETE: api/venue/{id}
         [HttpDelete("{id}")]
         public async Task<IActionResult> Delete(int id)
         {
-            var deleted = await _venueService.DeleteAsync(id);
+            var deleted = await _eventService.DeleteAsync(id);
 
             if (!deleted)
                 return NotFound();

@@ -14,11 +14,11 @@ namespace PrishtinaNights.Core.Services
             _venueRepository = venueRepository;
         }
 
-        public async Task<IEnumerable<VenueDto>> GetAllAsync()
+        public async Task<IEnumerable<VenueDTO>> GetAllAsync()
         {
             var venues = await _venueRepository.GetAllAsync();
 
-            return venues.Select(v => new VenueDto
+            return venues.Select(v => new VenueDTO
             {
                 Id = v.Id,
                 Name = v.Name,
@@ -34,13 +34,13 @@ namespace PrishtinaNights.Core.Services
             });
         }
 
-        public async Task<VenueDto?> GetByIdAsync(int id)
+        public async Task<VenueDTO?> GetByIdAsync(int id)
         {
             var v = await _venueRepository.GetByIdAsync(id);
 
             if (v == null) return null;
 
-            return new VenueDto
+            return new VenueDTO
             {
                 Id = v.Id,
                 Name = v.Name,
@@ -56,7 +56,7 @@ namespace PrishtinaNights.Core.Services
             };
         }
 
-        public async Task<VenueDto> CreateAsync(CreateVenueDto dto)
+        public async Task<VenueDTO> CreateAsync(CreateVenueDTO dto)
         {
             var venue = new Venue
             {
@@ -71,7 +71,7 @@ namespace PrishtinaNights.Core.Services
 
             var created = await _venueRepository.AddAsync(venue);
 
-            return new VenueDto
+            return new VenueDTO
             {
                 Id = created.Id,
                 Name = created.Name,
@@ -84,7 +84,7 @@ namespace PrishtinaNights.Core.Services
             };
         }
 
-        public async Task<VenueDto?> UpdateAsync(int id, UpdateVenueDto dto)
+        public async Task<VenueDTO?> UpdateAsync(int id, UpdateVenueDTO dto)
         {
             var exists = await _venueRepository.GetByIdAsync(id);
             if (exists == null) return null;
@@ -101,7 +101,7 @@ namespace PrishtinaNights.Core.Services
 
             if (updated == null) return null;
 
-            return new VenueDto
+            return new VenueDTO
             {
                 Id = updated.Id,
                 Name = updated.Name,
