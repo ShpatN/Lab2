@@ -21,6 +21,17 @@ namespace PrishtinaNights.Core.Services
 
         public async Task<int> CreateReservationAsync(CreateReservationDTO dto)
         {
+            // VALIDATION FIRST 
+            if (dto.TableId.HasValue)
+            {
+                var isReserved = await _reservationRepository
+                    .IsTableReservedAsync(dto.TableId.Value, dto.ReservationDate);
+
+                if (isReserved)
+                    throw new Exception("Table is already reserved for this time.");
+            }
+
+            //  THEN create reservation
             var reservation = new Reservation
             {
                 UserId = dto.UserId,

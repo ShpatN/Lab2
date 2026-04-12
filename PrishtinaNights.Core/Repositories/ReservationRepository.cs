@@ -26,5 +26,32 @@ namespace PrishtinaNights.Core.Repositories
             await _reservations.AddAsync(reservation);
             await _context.SaveChangesAsync();
         }
+
+        public async Task<bool> IsTableReservedAsync(int tableId, DateTime reservationDate)
+        {
+            return await _reservations.AnyAsync(r =>
+                r.TableId == tableId &&
+                r.ReservationDate == reservationDate &&
+                r.Status != "Cancelled"
+            );
+        }
+
+        public async Task<Reservation?> GetByIdAsync(int id)
+        {
+            return await _reservations.FirstOrDefaultAsync(r => r.Id == id);
+        }
+
+        public async Task UpdateAsync(Reservation reservation)
+        {
+            var existing = await _reservations.FindAsync(reservation.Id);
+
+            if (existing == null)
+                throw new Exception("Reservation not found");
+
+            existing.Status = reservation.Status;
+            existing.UpdatedAt = DateTime.UtcNow;
+
+            await _context.SaveChangesAsync();
+        }
     }
 }
