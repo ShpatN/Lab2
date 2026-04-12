@@ -15,5 +15,7 @@ public partial class ReservationStatusHistory
 
     public DateTime ChangedAt { get; set; }
 
+    public DateTime CreatedAt { get; set; }
+
     public virtual Reservation Reservation { get; set; }
 }
