@@ -9,13 +9,16 @@ namespace PrishtinaNights.Core.Services
     {
         private readonly IPaymentRepository _paymentRepository;
         private readonly IReservationRepository _reservationRepository;
+        private readonly IReservationStatusHistoryRepository _historyRepository;
 
         public PaymentService(
             IPaymentRepository paymentRepository,
-            IReservationRepository reservationRepository)
+            IReservationRepository reservationRepository,
+            IReservationStatusHistoryRepository historyRepository)
         {
             _paymentRepository = paymentRepository;
             _reservationRepository = reservationRepository;
+            _historyRepository = historyRepository;
         }
 
         public async Task<int> CreatePaymentAsync(CreatePaymentDTO dto)
@@ -43,6 +46,13 @@ namespace PrishtinaNights.Core.Services
                 reservation.Status = "Confirmed";
 
                 await _reservationRepository.UpdateAsync(reservation);
+
+                await _historyRepository.AddAsync(new ReservationStatusHistory
+                {
+                    ReservationId = reservation.Id,
+                    Status = "Confirmed",
+                    ChangedAt = DateTime.UtcNow
+                });
             }
 
             return payment.Id;

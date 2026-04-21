@@ -1,4 +1,5 @@
 ﻿using PrishtinaNights.Core.DTOs;
+using PrishtinaNights.Core.Models;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -10,5 +11,9 @@ namespace PrishtinaNights.Core.Services.Interfaces
     public interface IReservationService
     {
         Task<int> CreateReservationAsync(CreateReservationDTO dto);
+        Task<IEnumerable<Reservation>> GetAllAsync();
+        Task<Reservation?> GetByIdAsync(int id);
+        Task UpdateAsync(UpdateReservationDTO dto);
+        Task DeleteAsync(int id);
     }
 }

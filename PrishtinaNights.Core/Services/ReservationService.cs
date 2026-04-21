@@ -49,5 +49,47 @@ namespace PrishtinaNights.Core.Services
 
             return reservation.Id;
         }
+
+        public async Task<IEnumerable<Reservation>> GetAllAsync()
+        {
+            return await _reservationRepository.GetAllAsync();
+        }
+
+        public async Task<Reservation?> GetByIdAsync(int id)
+        {
+            return await _reservationRepository.GetByIdAsync(id);
+        }
+        public async Task UpdateAsync(UpdateReservationDTO dto)
+        {
+            var existing = await _reservationRepository.GetByIdAsync(dto.Id);
+
+            if (existing == null)
+                throw new Exception("Reservation not found");
+
+            //  VALIDATION
+            if (dto.TableId.HasValue)
+            {
+                var isReserved = await _reservationRepository
+                    .IsTableReservedAsync(dto.TableId.Value, dto.ReservationDate);
+
+                // avoid blocking itself
+                if (isReserved && existing.TableId != dto.TableId)
+                    throw new Exception("Table is already reserved for this time.");
+            }
+
+            // Update fields
+            existing.TableId = dto.TableId;
+            existing.ReservationDate = dto.ReservationDate;
+            existing.NumberOfPeople = dto.NumberOfPeople;
+            existing.SpecialRequests = dto.SpecialRequests;
+            existing.UpdatedAt = DateTime.UtcNow;
+
+            await _reservationRepository.UpdateAsync(existing);
+        }
+
+        public async Task DeleteAsync(int id)
+        {
+            await _reservationRepository.DeleteAsync(id);
+        }
     }
 }

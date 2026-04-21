@@ -48,9 +48,29 @@ namespace PrishtinaNights.Core.Repositories
             if (existing == null)
                 throw new Exception("Reservation not found");
 
+            existing.TableId = reservation.TableId;
+            existing.ReservationDate = reservation.ReservationDate;
+            existing.NumberOfPeople = reservation.NumberOfPeople;
+            existing.SpecialRequests = reservation.SpecialRequests;
             existing.Status = reservation.Status;
             existing.UpdatedAt = DateTime.UtcNow;
 
+            await _context.SaveChangesAsync();
+        }
+
+        public async Task<IEnumerable<Reservation>> GetAllAsync()
+        {
+            return await _reservations.ToListAsync();
+        }
+
+        public async Task DeleteAsync(int id)
+        {
+            var reservation = await _reservations.FindAsync(id);
+
+            if (reservation == null)
+                throw new Exception("Reservation not found");
+
+            _reservations.Remove(reservation);
             await _context.SaveChangesAsync();
         }
     }

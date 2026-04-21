@@ -30,6 +30,7 @@ builder.Services.AddScoped<IEventCategoryRepository, EventCategoryRepository>();
 builder.Services.AddScoped<ITicketTypeRepository, TicketTypeRepository>();
 builder.Services.AddScoped<IReservationRepository, ReservationRepository>();
 builder.Services.AddScoped<IPaymentRepository, PaymentRepository>();
+builder.Services.AddScoped<IReservationStatusHistoryRepository, ReservationStatusHistoryRepository>();
 
 // Services
 builder.Services.AddScoped<IAuthService, AuthService>();
