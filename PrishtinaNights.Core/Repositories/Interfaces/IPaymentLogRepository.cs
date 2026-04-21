@@ -7,11 +7,8 @@ using System.Threading.Tasks;
 
 namespace PrishtinaNights.Core.Repositories.Interfaces
 {
-    public interface IPaymentRepository
+    public interface IPaymentLogRepository
     {
-        Task AddAsync(Payment payment);
-        Task<IEnumerable<Payment>> GetAllAsync();
-        Task<Payment?> GetByIdAsync(int id);
-        Task UpdateAsync(Payment payment);
+        Task AddAsync(PaymentLog log);
     }
 }
