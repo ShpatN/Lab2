@@ -243,6 +243,7 @@ public partial class ApplicationDbContext : DbContext
         {
             entity.HasKey(e => e.Id).HasName("PK__Reservat__3214EC072EC6BABD");
 
+            entity.Property(e => e.CreatedAt).HasDefaultValueSql("(getutcdate())");
             entity.Property(e => e.Status)
                 .IsRequired()
                 .HasMaxLength(50)
@@ -274,6 +275,7 @@ public partial class ApplicationDbContext : DbContext
             entity.ToTable("ReservationStatusHistory");
 
             entity.Property(e => e.ChangedAt).HasDefaultValueSql("(getdate())");
+            entity.Property(e => e.CreatedAt).HasDefaultValueSql("(getutcdate())");
             entity.Property(e => e.Status).HasMaxLength(50);
 
             entity.HasOne(d => d.Reservation).WithMany(p => p.ReservationStatusHistories)
@@ -417,6 +419,9 @@ public partial class ApplicationDbContext : DbContext
             entity.HasKey(e => e.Id).HasName("PK__Venues__3214EC07D7F383BA");
 
             entity.Property(e => e.Address).HasMaxLength(300);
+            entity.Property(e => e.Category)
+                .IsRequired()
+                .HasMaxLength(100);
             entity.Property(e => e.City).HasMaxLength(100);
             entity.Property(e => e.CreatedAt).HasDefaultValueSql("(getdate())");
             entity.Property(e => e.IsActive).HasDefaultValue(true);

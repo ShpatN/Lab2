@@ -31,6 +31,8 @@ public partial class Reservation
 
     public int? UpdatedBy { get; set; }
 
+    public DateTime CreatedAt { get; set; }
+
     public virtual Event Event { get; set; }
 
     public virtual ICollection<Payment> Payments { get; set; } = new List<Payment>();
