@@ -16,15 +16,26 @@ namespace PrishtinaNights.Core.Services
             _venueRepository = venueRepository;
         }
 
-        public async Task<IEnumerable<EventDTO>> GetAllAsync()
+        private async Task EnsureUserOwnsVenueAsync(int venueId, int actingUserId, bool isAdmin)
         {
-            var events = await _eventRepository.GetAllAsync();
+            if (isAdmin) return;
+            var venue = await _venueRepository.GetByIdAsync(venueId);
+            if (venue == null)
+                throw new Exception("Venue not found.");
+            if (venue.OwnerId != actingUserId)
+                throw new ForbiddenException("You can only manage events at venues you own.");
+        }
+
+        public async Task<IEnumerable<EventDTO>> GetAllAsync(EventSearchQueryDTO? query = null)
+        {
+            var events = await _eventRepository.GetAllAsync(query);
 
             return events.Select(e => new EventDTO
             {
                 Id = e.Id,
                 VenueId = e.VenueId,
                 CategoryId = e.CategoryId,
+                CategoryName = e.Category?.Name,
                 Name = e.Name,
                 Description = e.Description,
                 StartDate = e.StartDate,
@@ -43,6 +54,7 @@ namespace PrishtinaNights.Core.Services
                 Id = e.Id,
                 VenueId = e.VenueId,
                 CategoryId = e.CategoryId,
+                CategoryName = e.Category?.Name,
                 Name = e.Name,
                 Description = e.Description,
                 StartDate = e.StartDate,
@@ -51,11 +63,13 @@ namespace PrishtinaNights.Core.Services
             };
         }
 
-        public async Task<EventDTO> CreateAsync(CreateEventDTO dto)
+        public async Task<EventDTO> CreateAsync(CreateEventDTO dto, int actingUserId, bool isAdmin)
         {
             var venueExists = await _venueRepository.ExistsAsync(dto.VenueId);
             if (!venueExists)
                 throw new Exception("Venue not found.");
+
+            await EnsureUserOwnsVenueAsync(dto.VenueId, actingUserId, isAdmin);
 
             var entity = new Event
             {
@@ -76,6 +90,7 @@ namespace PrishtinaNights.Core.Services
                 Id = created.Id,
                 VenueId = created.VenueId,
                 CategoryId = created.CategoryId,
+                CategoryName = created.Category?.Name,
                 Name = created.Name,
                 Description = created.Description,
                 StartDate = created.StartDate,
@@ -84,14 +99,18 @@ namespace PrishtinaNights.Core.Services
             };
         }
 
-        public async Task<EventDTO?> UpdateAsync(int id, UpdateEventDTO dto)
+        public async Task<EventDTO?> UpdateAsync(int id, UpdateEventDTO dto, int actingUserId, bool isAdmin)
         {
             var existing = await _eventRepository.GetByIdAsync(id);
             if (existing == null) return null;
 
+            await EnsureUserOwnsVenueAsync(existing.VenueId, actingUserId, isAdmin);
+
             var venueExists = await _venueRepository.ExistsAsync(dto.VenueId);
             if (!venueExists)
                 throw new Exception("Venue not found.");
+
+            await EnsureUserOwnsVenueAsync(dto.VenueId, actingUserId, isAdmin);
 
             existing.VenueId = dto.VenueId;
             existing.CategoryId = dto.CategoryId;
@@ -110,6 +129,7 @@ namespace PrishtinaNights.Core.Services
                 Id = updated.Id,
                 VenueId = updated.VenueId,
                 CategoryId = updated.CategoryId,
+                CategoryName = updated.Category?.Name,
                 Name = updated.Name,
                 Description = updated.Description,
                 StartDate = updated.StartDate,
@@ -118,8 +138,13 @@ namespace PrishtinaNights.Core.Services
             };
         }
 
-        public async Task<bool> DeleteAsync(int id)
+        public async Task<bool> DeleteAsync(int id, int actingUserId, bool isAdmin)
         {
+            var existing = await _eventRepository.GetByIdAsync(id);
+            if (existing == null) return false;
+
+            await EnsureUserOwnsVenueAsync(existing.VenueId, actingUserId, isAdmin);
+
             return await _eventRepository.DeleteAsync(id);
         }
     }
