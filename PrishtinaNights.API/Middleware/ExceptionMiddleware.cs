@@ -1,5 +1,6 @@
 ﻿using System.Net;
 using System.Text.Json;
+using PrishtinaNights.Core;
 
 namespace PrishtinaNights.API.Middleware
 {
@@ -35,10 +36,35 @@ namespace PrishtinaNights.API.Middleware
                 message = ex.Message;
             }
 
+            if (ex.Message.Contains("Invalid credentials"))
+            {
+                statusCode = HttpStatusCode.Unauthorized;
+                message = ex.Message;
+            }
+
+            if (ex.Message.Contains("already registered"))
+            {
+                statusCode = HttpStatusCode.Conflict;
+                message = ex.Message;
+            }
+
+            if (ex.Message.Contains("already have a reservation") ||
+                ex.Message.Contains("Table is already reserved"))
+            {
+                statusCode = HttpStatusCode.Conflict;
+                message = ex.Message;
+            }
+
             if (ex.Message.Contains("conflicted"))
             {
                 statusCode = HttpStatusCode.BadRequest;
                 message = "Cannot delete entity due to related data.";
+            }
+
+            if (ex is ForbiddenException)
+            {
+                statusCode = HttpStatusCode.Forbidden;
+                message = ex.Message;
             }
 
             var response = new

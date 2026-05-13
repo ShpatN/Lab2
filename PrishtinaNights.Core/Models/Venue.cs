@@ -17,6 +17,8 @@ public partial class Venue
 
     public string City { get; set; }
 
+    public string Category { get; set; }
+
     public int OwnerId { get; set; }
 
     public bool IsActive { get; set; }

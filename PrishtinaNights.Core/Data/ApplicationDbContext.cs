@@ -419,6 +419,9 @@ public partial class ApplicationDbContext : DbContext
             entity.HasKey(e => e.Id).HasName("PK__Venues__3214EC07D7F383BA");
 
             entity.Property(e => e.Address).HasMaxLength(300);
+            entity.Property(e => e.Category)
+                .IsRequired()
+                .HasMaxLength(100);
             entity.Property(e => e.City).HasMaxLength(100);
             entity.Property(e => e.CreatedAt).HasDefaultValueSql("(getdate())");
             entity.Property(e => e.IsActive).HasDefaultValue(true);
