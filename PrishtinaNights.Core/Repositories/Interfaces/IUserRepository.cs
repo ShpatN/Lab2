@@ -13,5 +13,9 @@ namespace PrishtinaNights.Core.Repositories.Interfaces
         Task<bool> ExistsAsync(int id);
         Task<List<string>> GetUserRolesAsync(int userId);
         Task<List<string>> GetUserPermissionsAsync(int userId);
+        Task<bool> EmailExistsAsync(string email);
+        Task<int?> GetRoleIdByNameAsync(string roleName);
+        Task<int?> GetFirstRoleIdAsync();
+        Task AddUserRoleAsync(int userId, int roleId);
     }
 }

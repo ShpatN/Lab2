@@ -2,7 +2,6 @@
 using PrishtinaNights.Core.Models;
 using PrishtinaNights.Core.Repositories.Interfaces;
 using PrishtinaNights.Core.Services.Interfaces;
-using BCrypt.Net;
 
 namespace PrishtinaNights.Core.Services
 {
@@ -30,7 +29,20 @@ namespace PrishtinaNights.Core.Services
         {
             var user = await _userRepository.GetByEmailAsync(request.Email);
 
-            if (user == null || !BCrypt.Net.BCrypt.Verify(request.Password, user.PasswordHash))
+            if (user == null || string.IsNullOrWhiteSpace(user.PasswordHash))
+                throw new Exception("Invalid credentials");
+
+            bool passwordOk;
+            try
+            {
+                passwordOk = BCrypt.Net.BCrypt.Verify(request.Password, user.PasswordHash);
+            }
+            catch
+            {
+                passwordOk = false;
+            }
+
+            if (!passwordOk)
                 throw new Exception("Invalid credentials");
 
             var roles = await _userRepository.GetUserRolesAsync(user.Id);
@@ -49,20 +61,64 @@ namespace PrishtinaNights.Core.Services
                 ExpiresAt = DateTime.UtcNow.AddDays(7)
             });
 
-            //  AUDIT LOG
-            await _auditLogRepository.AddAsync(new AuditLog
-            {
-                UserId = user.Id,
-                Action = "LOGIN",
-                Entity = "User",
-                EntityId = user.Id,
-                CreatedAt = DateTime.UtcNow
-            });
+            await _auditLogRepository.AddAsync(CreateAuditLog(user.Id, "LOGIN", "User", user.Id));
 
             return new AuthResponseDTO
             {
                 AccessToken = accessToken,
-                RefreshToken = refreshToken
+                RefreshToken = refreshToken,
+                User = MapUserInfo(user, roles)
+            };
+        }
+
+        // ================= REGISTER =================
+        public async Task<AuthResponseDTO> RegisterAsync(RegisterRequestDTO request)
+        {
+            if (await _userRepository.EmailExistsAsync(request.Email))
+                throw new Exception("Email already registered");
+
+            var user = new User
+            {
+                FirstName = request.FirstName,
+                LastName = request.LastName,
+                Email = request.Email,
+                PasswordHash = BCrypt.Net.BCrypt.HashPassword(request.Password),
+                IsActive = true,
+                CreatedAt = DateTime.UtcNow
+            };
+
+            await _userRepository.AddAsync(user);
+
+            var roleId = await _userRepository.GetRoleIdByNameAsync("User")
+                ?? await _userRepository.GetRoleIdByNameAsync("Customer")
+                ?? await _userRepository.GetFirstRoleIdAsync();
+
+            if (roleId.HasValue)
+                await _userRepository.AddUserRoleAsync(user.Id, roleId.Value);
+
+            var roles = await _userRepository.GetUserRolesAsync(user.Id);
+            var permissions = await _userRepository.GetUserPermissionsAsync(user.Id);
+
+            var accessToken = _tokenService.GenerateAccessToken(user, roles, permissions);
+
+            var refreshToken = _tokenService.GenerateRefreshToken();
+            var tokenHash = BCrypt.Net.BCrypt.HashPassword(refreshToken);
+
+            await _refreshTokenRepository.AddAsync(new RefreshToken
+            {
+                UserId = user.Id,
+                TokenHash = tokenHash,
+                CreatedAt = DateTime.UtcNow,
+                ExpiresAt = DateTime.UtcNow.AddDays(7)
+            });
+
+            await _auditLogRepository.AddAsync(CreateAuditLog(user.Id, "REGISTER", "User", user.Id));
+
+            return new AuthResponseDTO
+            {
+                AccessToken = accessToken,
+                RefreshToken = refreshToken,
+                User = MapUserInfo(user, roles)
             };
         }
 
@@ -107,20 +163,13 @@ namespace PrishtinaNights.Core.Services
                 ExpiresAt = DateTime.UtcNow.AddDays(7)
             });
 
-            //  AUDIT LOG
-            await _auditLogRepository.AddAsync(new AuditLog
-            {
-                UserId = user.Id,
-                Action = "REFRESH_TOKEN",
-                Entity = "Auth",
-                EntityId = user.Id,
-                CreatedAt = DateTime.UtcNow
-            });
+            await _auditLogRepository.AddAsync(CreateAuditLog(user.Id, "REFRESH_TOKEN", "Auth", user.Id));
 
             return new AuthResponseDTO
             {
                 AccessToken = accessToken,
-                RefreshToken = newRefreshToken
+                RefreshToken = newRefreshToken,
+                User = MapUserInfo(user, roles)
             };
         }
 
@@ -144,15 +193,32 @@ namespace PrishtinaNights.Core.Services
 
             await _refreshTokenRepository.RemoveAsync(token);
 
-            //  AUDIT LOG
-            await _auditLogRepository.AddAsync(new AuditLog
-            {
-                UserId = token.UserId,
-                Action = "LOGOUT",
-                Entity = "Auth",
-                EntityId = token.UserId,
-                CreatedAt = DateTime.UtcNow
-            });
+            await _auditLogRepository.AddAsync(CreateAuditLog(token.UserId, "LOGOUT", "Auth", token.UserId));
         }
+
+        /// <summary>SQL schema often requires non-null optional columns on AuditLogs.</summary>
+        private static AuditLog CreateAuditLog(int? userId, string action, string entity, int? entityId) =>
+            new AuditLog
+            {
+                UserId = userId,
+                Action = action,
+                Entity = entity ?? string.Empty,
+                EntityId = entityId,
+                OldValue = string.Empty,
+                NewValue = string.Empty,
+                IpAddress = string.Empty,
+                CreatedAt = DateTime.UtcNow
+            };
+
+        private static AuthUserInfoDTO MapUserInfo(User user, List<string> roles) =>
+            new()
+            {
+                Id = user.Id,
+                FirstName = user.FirstName ?? string.Empty,
+                LastName = user.LastName ?? string.Empty,
+                Email = user.Email ?? string.Empty,
+                IsActive = user.IsActive,
+                Roles = roles ?? new List<string>()
+            };
     }
 }
