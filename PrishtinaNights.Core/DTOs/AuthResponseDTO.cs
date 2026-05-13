@@ -10,5 +10,6 @@ namespace PrishtinaNights.Core.DTOs
     {
         public string AccessToken { get; set; } = string.Empty;
         public string RefreshToken { get; set; } = string.Empty;
+        public AuthUserInfoDTO User { get; set; } = null!;
     }
 }
