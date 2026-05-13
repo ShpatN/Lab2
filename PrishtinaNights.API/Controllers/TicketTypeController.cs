@@ -1,4 +1,6 @@
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using PrishtinaNights.API.Authorization;
 using PrishtinaNights.Core.DTOs;
 using PrishtinaNights.Core.Services.Interfaces;
 
@@ -16,6 +18,7 @@ namespace PrishtinaNights.API.Controllers
         }
 
         [HttpGet]
+        [AllowAnonymous]
         public async Task<IActionResult> GetAll()
         {
             var ticketTypes = await _ticketTypeService.GetAllAsync();
@@ -23,6 +26,7 @@ namespace PrishtinaNights.API.Controllers
         }
 
         [HttpGet("{id}")]
+        [AllowAnonymous]
         public async Task<IActionResult> GetById(int id)
         {
             var ticketType = await _ticketTypeService.GetByIdAsync(id);
@@ -34,22 +38,30 @@ namespace PrishtinaNights.API.Controllers
         }
 
         [HttpPost]
+        [Authorize(Policy = AuthorizationPolicies.VenueOwnerOrAdmin)]
         public async Task<IActionResult> Create([FromBody] CreateTicketTypeDTO dto)
         {
             if (!ModelState.IsValid)
                 return BadRequest(ModelState);
 
-            var created = await _ticketTypeService.CreateAsync(dto);
+            if (!User.TryGetUserId(out var userId))
+                return Unauthorized();
+
+            var created = await _ticketTypeService.CreateAsync(dto, userId, User.IsAdmin());
             return CreatedAtAction(nameof(GetById), new { id = created.Id }, created);
         }
 
         [HttpPut("{id}")]
+        [Authorize(Policy = AuthorizationPolicies.VenueOwnerOrAdmin)]
         public async Task<IActionResult> Update(int id, [FromBody] UpdateTicketTypeDTO dto)
         {
             if (!ModelState.IsValid)
                 return BadRequest(ModelState);
 
-            var updated = await _ticketTypeService.UpdateAsync(id, dto);
+            if (!User.TryGetUserId(out var userId))
+                return Unauthorized();
+
+            var updated = await _ticketTypeService.UpdateAsync(id, dto, userId, User.IsAdmin());
 
             if (updated == null)
                 return NotFound();
@@ -58,9 +70,13 @@ namespace PrishtinaNights.API.Controllers
         }
 
         [HttpDelete("{id}")]
+        [Authorize(Policy = AuthorizationPolicies.VenueOwnerOrAdmin)]
         public async Task<IActionResult> Delete(int id)
         {
-            var deleted = await _ticketTypeService.DeleteAsync(id);
+            if (!User.TryGetUserId(out var userId))
+                return Unauthorized();
+
+            var deleted = await _ticketTypeService.DeleteAsync(id, userId, User.IsAdmin());
 
             if (!deleted)
                 return NotFound();

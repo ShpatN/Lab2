@@ -1,11 +1,13 @@
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using PrishtinaNights.API.Authorization;
 using PrishtinaNights.Core.DTOs;
 using PrishtinaNights.Core.Services.Interfaces;
 
 namespace PrishtinaNights.API.Controllers
 {
     [ApiController]
-    [Route("api/[controller]")]
+    [Route("api/venues")]
     public class VenueController : ControllerBase
     {
         private readonly IVenueService _venueService;
@@ -15,16 +17,16 @@ namespace PrishtinaNights.API.Controllers
             _venueService = venueService;
         }
 
-        // GET: api/venue
         [HttpGet]
-        public async Task<IActionResult> GetAll()
+        [AllowAnonymous]
+        public async Task<IActionResult> GetAll([FromQuery] VenueSearchQueryDTO query)
         {
-            var venues = await _venueService.GetAllAsync();
+            var venues = await _venueService.GetAllAsync(query);
             return Ok(venues);
         }
 
-        // GET: api/venue/{id}
         [HttpGet("{id}")]
+        [AllowAnonymous]
         public async Task<IActionResult> GetById(int id)
         {
             var venue = await _venueService.GetByIdAsync(id);
@@ -35,26 +37,32 @@ namespace PrishtinaNights.API.Controllers
             return Ok(venue);
         }
 
-        // POST: api/venue
         [HttpPost]
+        [Authorize(Policy = AuthorizationPolicies.VenueOwnerOrAdmin)]
         public async Task<IActionResult> Create([FromBody] CreateVenueDTO dto)
         {
             if (!ModelState.IsValid)
                 return BadRequest(ModelState);
 
-            var created = await _venueService.CreateAsync(dto);
+            if (!User.TryGetUserId(out var userId))
+                return Unauthorized();
+
+            var created = await _venueService.CreateAsync(dto, userId, User.IsAdmin());
 
             return CreatedAtAction(nameof(GetById), new { id = created.Id }, created);
         }
 
-        // PUT: api/venue/{id}
         [HttpPut("{id}")]
+        [Authorize(Policy = AuthorizationPolicies.VenueOwnerOrAdmin)]
         public async Task<IActionResult> Update(int id, [FromBody] UpdateVenueDTO dto)
         {
             if (!ModelState.IsValid)
                 return BadRequest(ModelState);
 
-            var updated = await _venueService.UpdateAsync(id, dto);
+            if (!User.TryGetUserId(out var userId))
+                return Unauthorized();
+
+            var updated = await _venueService.UpdateAsync(id, dto, userId, User.IsAdmin());
 
             if (updated == null)
                 return NotFound();
@@ -62,11 +70,14 @@ namespace PrishtinaNights.API.Controllers
             return Ok(updated);
         }
 
-        // DELETE: api/venue/{id}
         [HttpDelete("{id}")]
+        [Authorize(Policy = AuthorizationPolicies.VenueOwnerOrAdmin)]
         public async Task<IActionResult> Delete(int id)
         {
-            var deleted = await _venueService.DeleteAsync(id);
+            if (!User.TryGetUserId(out var userId))
+                return Unauthorized();
+
+            var deleted = await _venueService.DeleteAsync(id, userId, User.IsAdmin());
 
             if (!deleted)
                 return NotFound();

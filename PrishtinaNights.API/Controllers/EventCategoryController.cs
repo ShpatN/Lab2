@@ -1,4 +1,6 @@
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using PrishtinaNights.API.Authorization;
 using PrishtinaNights.Core.DTOs;
 using PrishtinaNights.Core.Services.Interfaces;
 
@@ -16,6 +18,7 @@ namespace PrishtinaNights.API.Controllers
         }
 
         [HttpGet]
+        [AllowAnonymous]
         public async Task<IActionResult> GetAll()
         {
             var categories = await _eventCategoryService.GetAllAsync();
@@ -23,6 +26,7 @@ namespace PrishtinaNights.API.Controllers
         }
 
         [HttpGet("{id}")]
+        [AllowAnonymous]
         public async Task<IActionResult> GetById(int id)
         {
             var category = await _eventCategoryService.GetByIdAsync(id);
@@ -34,6 +38,7 @@ namespace PrishtinaNights.API.Controllers
         }
 
         [HttpPost]
+        [Authorize(Policy = AuthorizationPolicies.AdminOnly)]
         public async Task<IActionResult> Create([FromBody] CreateEventCategoryDTO dto)
         {
             if (!ModelState.IsValid)
@@ -44,6 +49,7 @@ namespace PrishtinaNights.API.Controllers
         }
 
         [HttpPut("{id}")]
+        [Authorize(Policy = AuthorizationPolicies.AdminOnly)]
         public async Task<IActionResult> Update(int id, [FromBody] UpdateEventCategoryDTO dto)
         {
             if (!ModelState.IsValid)
@@ -58,6 +64,7 @@ namespace PrishtinaNights.API.Controllers
         }
 
         [HttpDelete("{id}")]
+        [Authorize(Policy = AuthorizationPolicies.AdminOnly)]
         public async Task<IActionResult> Delete(int id)
         {
             var deleted = await _eventCategoryService.DeleteAsync(id);
