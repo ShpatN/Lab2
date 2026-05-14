@@ -9,11 +9,29 @@ namespace PrishtinaNights.Core.Services
     {
         private readonly ITicketTypeRepository _ticketTypeRepository;
         private readonly IEventRepository _eventRepository;
+        private readonly IVenueRepository _venueRepository;
 
-        public TicketTypeService(ITicketTypeRepository ticketTypeRepository, IEventRepository eventRepository)
+        public TicketTypeService(
+            ITicketTypeRepository ticketTypeRepository,
+            IEventRepository eventRepository,
+            IVenueRepository venueRepository)
         {
             _ticketTypeRepository = ticketTypeRepository;
             _eventRepository = eventRepository;
+            _venueRepository = venueRepository;
+        }
+
+        private async Task EnsureOwnsEventVenueAsync(int eventId, int actingUserId, bool isAdmin)
+        {
+            if (isAdmin) return;
+            var ev = await _eventRepository.GetByIdAsync(eventId);
+            if (ev == null)
+                throw new Exception("Event not found.");
+            var venue = await _venueRepository.GetByIdAsync(ev.VenueId);
+            if (venue == null)
+                throw new Exception("Venue not found.");
+            if (venue.OwnerId != actingUserId)
+                throw new ForbiddenException("You can only manage ticket types for events at your own venues.");
         }
 
         public async Task<IEnumerable<TicketTypeDTO>> GetAllAsync()
@@ -53,11 +71,13 @@ namespace PrishtinaNights.Core.Services
             };
         }
 
-        public async Task<TicketTypeDTO> CreateAsync(CreateTicketTypeDTO dto)
+        public async Task<TicketTypeDTO> CreateAsync(CreateTicketTypeDTO dto, int actingUserId, bool isAdmin)
         {
             var eventExists = await _eventRepository.GetByIdAsync(dto.EventId);
             if (eventExists == null)
                 throw new Exception("Event not found.");
+
+            await EnsureOwnsEventVenueAsync(dto.EventId, actingUserId, isAdmin);
 
             var entity = new TicketType
             {
@@ -84,14 +104,18 @@ namespace PrishtinaNights.Core.Services
             };
         }
 
-        public async Task<TicketTypeDTO?> UpdateAsync(int id, UpdateTicketTypeDTO dto)
+        public async Task<TicketTypeDTO?> UpdateAsync(int id, UpdateTicketTypeDTO dto, int actingUserId, bool isAdmin)
         {
             var existing = await _ticketTypeRepository.GetByIdAsync(id);
             if (existing == null) return null;
 
+            await EnsureOwnsEventVenueAsync(existing.EventId, actingUserId, isAdmin);
+
             var eventExists = await _eventRepository.GetByIdAsync(dto.EventId);
             if (eventExists == null)
                 throw new Exception("Event not found.");
+
+            await EnsureOwnsEventVenueAsync(dto.EventId, actingUserId, isAdmin);
 
             existing.EventId = dto.EventId;
             existing.Name = dto.Name;
@@ -116,8 +140,13 @@ namespace PrishtinaNights.Core.Services
             };
         }
 
-        public async Task<bool> DeleteAsync(int id)
+        public async Task<bool> DeleteAsync(int id, int actingUserId, bool isAdmin)
         {
+            var existing = await _ticketTypeRepository.GetByIdAsync(id);
+            if (existing == null) return false;
+
+            await EnsureOwnsEventVenueAsync(existing.EventId, actingUserId, isAdmin);
+
             return await _ticketTypeRepository.DeleteAsync(id);
         }
     }

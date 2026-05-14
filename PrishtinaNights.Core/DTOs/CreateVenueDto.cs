@@ -20,6 +20,9 @@ namespace PrishtinaNights.Core.DTOs
         [StringLength(100, ErrorMessage = "City can't exceed 100 characters")]
         public string City { get; set; } = string.Empty;
 
+        [StringLength(100, ErrorMessage = "Category can't exceed 100 characters")]
+        public string Category { get; set; } = "Lounge";
+
         [Required(ErrorMessage = "OwnerId is required")]
         public int OwnerId { get; set; }
 
