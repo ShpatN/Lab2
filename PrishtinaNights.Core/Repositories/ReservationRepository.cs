@@ -1,4 +1,4 @@
-﻿using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore;
 using PrishtinaNights.Core.Data;
 using PrishtinaNights.Core.Models;
 using PrishtinaNights.Core.Repositories.Interfaces;
@@ -32,13 +32,21 @@ namespace PrishtinaNights.Core.Repositories
             return await _reservations.AnyAsync(r =>
                 r.TableId == tableId &&
                 r.ReservationDate == reservationDate &&
-                r.Status != "Cancelled"
+                (r.Status ?? "").ToLower() != "cancelled"
             );
         }
 
         public async Task<Reservation?> GetByIdAsync(int id)
         {
             return await _reservations.FirstOrDefaultAsync(r => r.Id == id);
+        }
+
+        public async Task<Reservation?> GetByIdWithVenueAsync(int id)
+        {
+            return await _reservations
+                .AsNoTracking()
+                .Include(r => r.Venue)
+                .FirstOrDefaultAsync(r => r.Id == id);
         }
 
         public async Task UpdateAsync(Reservation reservation)
@@ -61,6 +69,39 @@ namespace PrishtinaNights.Core.Repositories
         public async Task<IEnumerable<Reservation>> GetAllAsync()
         {
             return await _reservations.ToListAsync();
+        }
+
+        public async Task<List<Reservation>> GetByUserIdWithDetailsAsync(int userId)
+        {
+            return await _reservations
+                .AsNoTracking()
+                .Where(r => r.UserId == userId)
+                .Include(r => r.Venue)
+                .Include(r => r.Event)
+                .Include(r => r.Table)
+                .OrderByDescending(r => r.ReservationDate)
+                .ToListAsync();
+        }
+
+        public async Task<List<Reservation>> GetForVenuesOwnedByUserAsync(int ownerUserId)
+        {
+            return await _reservations
+                .AsNoTracking()
+                .Where(r => r.Venue.OwnerId == ownerUserId)
+                .Include(r => r.Venue)
+                .Include(r => r.Event)
+                .Include(r => r.Table)
+                .OrderByDescending(r => r.ReservationDate)
+                .ToListAsync();
+        }
+
+        public async Task<bool> HasDuplicateUserVenueDateTimeAsync(int userId, int venueId, DateTime reservationDate)
+        {
+            return await _reservations.AnyAsync(r =>
+                r.UserId == userId &&
+                r.VenueId == venueId &&
+                r.ReservationDate == reservationDate &&
+                (r.Status ?? "").ToLower() != "cancelled");
         }
 
         public async Task DeleteAsync(int id)

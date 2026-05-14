@@ -1,4 +1,4 @@
-﻿using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore;
 using PrishtinaNights.Core.Data;
 using PrishtinaNights.Core.Models;
 using PrishtinaNights.Core.Repositories.Interfaces;
@@ -25,6 +25,14 @@ namespace PrishtinaNights.Core.Repositories
         public async Task<IEnumerable<Payment>> GetAllAsync()
         {
             return await _payments.ToListAsync();
+        }
+
+        public async Task<IEnumerable<Payment>> GetByUserIdAsync(int userId)
+        {
+            return await _payments
+                .AsNoTracking()
+                .Where(p => p.UserId == userId)
+                .ToListAsync();
         }
 
         public async Task<Payment?> GetByIdAsync(int id)

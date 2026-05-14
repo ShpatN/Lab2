@@ -1,4 +1,5 @@
-﻿using PrishtinaNights.Core.DTOs;
+using PrishtinaNights.Core;
+using PrishtinaNights.Core.DTOs;
 using PrishtinaNights.Core.Models;
 using PrishtinaNights.Core.Repositories.Interfaces;
 using PrishtinaNights.Core.Services.Interfaces;
@@ -24,12 +25,24 @@ namespace PrishtinaNights.Core.Services
             _paymentLogRepository = paymentLogRepository;
         }
 
-        public async Task<int> CreatePaymentAsync(CreatePaymentDTO dto)
+        public async Task<int> CreatePaymentAsync(CreatePaymentDTO dto, int actingUserId, bool isAdmin)
         {
-            // Create payment
+            var userId = isAdmin ? dto.UserId : actingUserId;
+            if (!isAdmin && dto.UserId != actingUserId)
+                throw new ForbiddenException("You can only create payments for your own account.");
+
+            if (dto.ReservationId.HasValue)
+            {
+                var reservation = await _reservationRepository.GetByIdAsync(dto.ReservationId.Value);
+                if (reservation == null)
+                    throw new Exception("Reservation not found");
+                if (!isAdmin && reservation.UserId != actingUserId)
+                    throw new ForbiddenException("You can only pay for your own reservations.");
+            }
+
             var payment = new Payment
             {
-                UserId = dto.UserId,
+                UserId = userId,
                 ReservationId = dto.ReservationId,
                 Amount = dto.Amount,
                 Status = "Paid",
@@ -38,7 +51,6 @@ namespace PrishtinaNights.Core.Services
 
             await _paymentRepository.AddAsync(payment);
 
-            // log payment
             await _paymentLogRepository.AddAsync(new PaymentLog
             {
                 PaymentId = payment.Id,
@@ -47,7 +59,6 @@ namespace PrishtinaNights.Core.Services
                 CreatedAt = DateTime.UtcNow
             });
 
-            // If linked to reservation, confirm it
             if (dto.ReservationId.HasValue)
             {
                 var reservation = await _reservationRepository
@@ -60,7 +71,6 @@ namespace PrishtinaNights.Core.Services
 
                 await _reservationRepository.UpdateAsync(reservation);
 
-                // Save status history
                 await _historyRepository.AddAsync(new ReservationStatusHistory
                 {
                     ReservationId = reservation.Id,
@@ -69,35 +79,40 @@ namespace PrishtinaNights.Core.Services
                 });
             }
 
-            // Return payment id
             return payment.Id;
         }
 
-        public async Task<IEnumerable<Payment>> GetAllAsync()
+        public async Task<IEnumerable<Payment>> GetAllForUserAsync(int actingUserId, bool isAdmin)
         {
-            return await _paymentRepository.GetAllAsync();
+            if (isAdmin)
+                return await _paymentRepository.GetAllAsync();
+            return await _paymentRepository.GetByUserIdAsync(actingUserId);
         }
 
-        public async Task<Payment?> GetByIdAsync(int id)
+        public async Task<Payment?> GetByIdForUserAsync(int id, int actingUserId, bool isAdmin)
         {
-            return await _paymentRepository.GetByIdAsync(id);
+            var payment = await _paymentRepository.GetByIdAsync(id);
+            if (payment == null) return null;
+            if (isAdmin || payment.UserId == actingUserId) return payment;
+            return null;
         }
 
-        public async Task UpdateStatusAsync(UpdatePaymentStatusDTO dto)
+        public async Task UpdateStatusAsync(UpdatePaymentStatusDTO dto, int actingUserId, bool isAdmin)
         {
+            if (!isAdmin)
+                throw new ForbiddenException("Only administrators can change payment status.");
+
             var payment = await _paymentRepository.GetByIdAsync(dto.PaymentId);
 
             if (payment == null)
                 throw new Exception("Payment not found");
 
-            //  VALIDATION 
             if (payment.Status == "Refunded")
                 throw new Exception("Payment already refunded");
 
             if (payment.Status == "Failed")
                 throw new Exception("Payment already failed");
 
-            // Allow only valid transitions
             if (dto.Status != "Refunded" && dto.Status != "Failed")
                 throw new Exception("Invalid payment status");
 
@@ -106,7 +121,6 @@ namespace PrishtinaNights.Core.Services
 
             await _paymentRepository.UpdateAsync(payment);
 
-            //  Log it
             await _paymentLogRepository.AddAsync(new PaymentLog
             {
                 PaymentId = payment.Id,
@@ -134,6 +148,5 @@ namespace PrishtinaNights.Core.Services
                 }
             }
         }
-
     }
 }

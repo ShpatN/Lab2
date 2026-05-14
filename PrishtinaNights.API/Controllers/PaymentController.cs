@@ -1,10 +1,13 @@
-﻿using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Mvc;
+using PrishtinaNights.API.Authorization;
 using PrishtinaNights.Core.DTOs;
 using PrishtinaNights.Core.Services.Interfaces;
 
 namespace PrishtinaNights.API.Controllers
 {
     [ApiController]
+    [Authorize]
     [Route("api/[controller]")]
     public class PaymentController : ControllerBase
     {
@@ -18,14 +21,20 @@ namespace PrishtinaNights.API.Controllers
         [HttpGet]
         public async Task<IActionResult> GetAll()
         {
-            var payments = await _paymentService.GetAllAsync();
+            if (!User.TryGetUserId(out var userId))
+                return Unauthorized();
+
+            var payments = await _paymentService.GetAllForUserAsync(userId, User.IsAdmin());
             return Ok(payments);
         }
 
         [HttpGet("{id}")]
         public async Task<IActionResult> GetById(int id)
         {
-            var payment = await _paymentService.GetByIdAsync(id);
+            if (!User.TryGetUserId(out var userId))
+                return Unauthorized();
+
+            var payment = await _paymentService.GetByIdForUserAsync(id, userId, User.IsAdmin());
 
             if (payment == null)
                 return NotFound();
@@ -36,14 +45,21 @@ namespace PrishtinaNights.API.Controllers
         [HttpPost]
         public async Task<IActionResult> Create([FromBody] CreatePaymentDTO dto)
         {
-            var id = await _paymentService.CreatePaymentAsync(dto);
+            if (!User.TryGetUserId(out var userId))
+                return Unauthorized();
+
+            var id = await _paymentService.CreatePaymentAsync(dto, userId, User.IsAdmin());
             return Ok(new { PaymentId = id });
         }
 
         [HttpPut("status")]
+        [Authorize(Policy = AuthorizationPolicies.AdminOnly)]
         public async Task<IActionResult> UpdateStatus([FromBody] UpdatePaymentStatusDTO dto)
         {
-            await _paymentService.UpdateStatusAsync(dto);
+            if (!User.TryGetUserId(out var userId))
+                return Unauthorized();
+
+            await _paymentService.UpdateStatusAsync(dto, userId, User.IsAdmin());
             return Ok("Payment status updated successfully");
         }
     }
