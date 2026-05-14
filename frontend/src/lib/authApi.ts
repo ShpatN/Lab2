@@ -1,4 +1,5 @@
 import type { AuthResponse, LoginRequestBody, RegisterRequestBody } from "@/types/auth";
+import { apiUrl } from "@/lib/api";
 
 async function parseAuthJson<T>(res: Response): Promise<T> {
   const text = await res.text();
@@ -17,7 +18,7 @@ async function parseAuthJson<T>(res: Response): Promise<T> {
 }
 
 export async function postLogin(body: LoginRequestBody): Promise<AuthResponse> {
-  const res = await fetch("/api/auth/login", {
+  const res = await fetch(apiUrl("/api/auth/login"), {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify(body),
@@ -26,7 +27,7 @@ export async function postLogin(body: LoginRequestBody): Promise<AuthResponse> {
 }
 
 export async function postRegister(body: RegisterRequestBody): Promise<AuthResponse> {
-  const res = await fetch("/api/auth/register", {
+  const res = await fetch(apiUrl("/api/auth/register"), {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify(body),
@@ -36,7 +37,7 @@ export async function postRegister(body: RegisterRequestBody): Promise<AuthRespo
 
 export async function postLogout(refreshToken: string): Promise<void> {
   try {
-    await fetch("/api/auth/logout", {
+    await fetch(apiUrl("/api/auth/logout"), {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ refreshToken }),

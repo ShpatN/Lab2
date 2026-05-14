@@ -9,6 +9,23 @@ import type { NotificationItem } from "@/types/notification";
 import type { CreatePaymentDTO, CreatePaymentIntentBody, PaymentIntentResponse } from "@/types/payment";
 import { getAccessToken } from "@/lib/authStorage";
 
+/**
+ * API origin without trailing slash. When empty, paths stay relative (dev: Vite `server.proxy` forwards `/api`).
+ * Set `VITE_API_BASE_URL` when the API is on another origin and you are not using the proxy.
+ */
+export function getApiBaseUrl(): string {
+  const raw = import.meta.env.VITE_API_BASE_URL as string | undefined;
+  if (raw == null || String(raw).trim() === "") return "";
+  return String(raw).trim().replace(/\/$/, "");
+}
+
+/** Absolute or same-origin URL for an API path (must start with `/`). */
+export function apiUrl(path: string): string {
+  const base = getApiBaseUrl();
+  const p = path.startsWith("/") ? path : `/${path}`;
+  return base ? `${base}${p}` : p;
+}
+
 /** Authenticated fetch: sends Bearer token when present. */
 export async function apiFetch(path: string, init?: RequestInit): Promise<Response> {
   const token = getAccessToken();
@@ -17,7 +34,7 @@ export async function apiFetch(path: string, init?: RequestInit): Promise<Respon
   if (init?.body != null && !headers.has("Content-Type")) {
     headers.set("Content-Type", "application/json");
   }
-  return fetch(path, { ...init, headers });
+  return fetch(apiUrl(path), { ...init, headers });
 }
 
 async function parseJson<T>(res: Response): Promise<T> {
