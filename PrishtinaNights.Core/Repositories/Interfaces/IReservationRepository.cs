@@ -12,8 +12,17 @@ namespace PrishtinaNights.Core.Repositories.Interfaces
         Task AddAsync(Reservation reservation);
         Task<bool> IsTableReservedAsync(int tableId, DateTime reservationDate);
         Task<Reservation?> GetByIdAsync(int id);
+
+        Task<Reservation?> GetByIdWithVenueAsync(int id);
         Task UpdateAsync(Reservation reservation);
         Task<IEnumerable<Reservation>> GetAllAsync();
+
+        Task<List<Reservation>> GetByUserIdWithDetailsAsync(int userId);
+
+        Task<List<Reservation>> GetForVenuesOwnedByUserAsync(int ownerUserId);
+
+        Task<bool> HasDuplicateUserVenueDateTimeAsync(int userId, int venueId, DateTime reservationDate);
+
         Task DeleteAsync(int id);
     }
 }

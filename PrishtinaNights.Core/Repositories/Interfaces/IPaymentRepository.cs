@@ -11,6 +11,9 @@ namespace PrishtinaNights.Core.Repositories.Interfaces
     {
         Task AddAsync(Payment payment);
         Task<IEnumerable<Payment>> GetAllAsync();
+
+        Task<IEnumerable<Payment>> GetByUserIdAsync(int userId);
+
         Task<Payment?> GetByIdAsync(int id);
         Task UpdateAsync(Payment payment);
     }
