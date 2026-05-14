@@ -1,13 +1,17 @@
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Options;
 using Microsoft.IdentityModel.Tokens;
+using MongoDB.Driver;
 using System.Text;
+using PrishtinaNights.API.Hubs;
+using PrishtinaNights.API.Middleware;
+using PrishtinaNights.API.Notifications;
 using PrishtinaNights.Core.Data;
 using PrishtinaNights.Core.Repositories.Interfaces;
 using PrishtinaNights.Core.Repositories;
 using PrishtinaNights.Core.Services.Interfaces;
 using PrishtinaNights.Core.Services;
-using PrishtinaNights.API.Middleware;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -43,6 +47,16 @@ builder.Services.AddScoped<IEventCategoryService, EventCategoryService>();
 builder.Services.AddScoped<ITicketTypeService, TicketTypeService>();
 builder.Services.AddScoped<IReservationService, ReservationService>();
 builder.Services.AddScoped<IPaymentService, PaymentService>();
+
+builder.Services.Configure<MongoDbSettings>(builder.Configuration.GetSection("MongoDb"));
+builder.Services.AddSingleton<IMongoClient>(sp =>
+{
+    var settings = sp.GetRequiredService<IOptions<MongoDbSettings>>().Value;
+    return new MongoClient(settings.ConnectionString);
+});
+builder.Services.AddScoped<INotificationService, NotificationService>();
+
+builder.Services.AddSignalR();
 
 // CORS CONFIGURATION
 builder.Services.AddCors(options =>
@@ -140,5 +154,6 @@ app.UseAuthentication();
 app.UseAuthorization();
 
 app.MapControllers();
+app.MapHub<ChatHub>("/hubs/chat");
 
 app.Run();
