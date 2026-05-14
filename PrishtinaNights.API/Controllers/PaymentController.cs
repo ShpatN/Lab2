@@ -1,66 +1,152 @@
-using Microsoft.AspNetCore.Authorization;
-using Microsoft.AspNetCore.Mvc;
-using PrishtinaNights.API.Authorization;
+using PrishtinaNights.Core;
 using PrishtinaNights.Core.DTOs;
+using PrishtinaNights.Core.Models;
+using PrishtinaNights.Core.Repositories.Interfaces;
 using PrishtinaNights.Core.Services.Interfaces;
 
-namespace PrishtinaNights.API.Controllers
+namespace PrishtinaNights.Core.Services
 {
-    [ApiController]
-    [Authorize]
-    [Route("api/[controller]")]
-    public class PaymentController : ControllerBase
+    public class PaymentService : IPaymentService
     {
-        private readonly IPaymentService _paymentService;
+        private readonly IPaymentRepository _paymentRepository;
+        private readonly IReservationRepository _reservationRepository;
+        private readonly IReservationStatusHistoryRepository _historyRepository;
+        private readonly IPaymentLogRepository _paymentLogRepository;
 
-        public PaymentController(IPaymentService paymentService)
+        public PaymentService(
+            IPaymentRepository paymentRepository,
+            IReservationRepository reservationRepository,
+            IReservationStatusHistoryRepository historyRepository,
+            IPaymentLogRepository paymentLogRepository)
         {
-            _paymentService = paymentService;
+            _paymentRepository = paymentRepository;
+            _reservationRepository = reservationRepository;
+            _historyRepository = historyRepository;
+            _paymentLogRepository = paymentLogRepository;
         }
 
-        [HttpGet]
-        public async Task<IActionResult> GetAll()
+        public async Task<int> CreatePaymentAsync(CreatePaymentDTO dto, int actingUserId, bool isAdmin)
         {
-            if (!User.TryGetUserId(out var userId))
-                return Unauthorized();
+            var userId = isAdmin ? dto.UserId : actingUserId;
+            if (!isAdmin && dto.UserId != actingUserId)
+                throw new ForbiddenException("You can only create payments for your own account.");
 
-            var payments = await _paymentService.GetAllForUserAsync(userId, User.IsAdmin());
-            return Ok(payments);
+            if (dto.ReservationId.HasValue)
+            {
+                var reservation = await _reservationRepository.GetByIdAsync(dto.ReservationId.Value);
+                if (reservation == null)
+                    throw new Exception("Reservation not found");
+                if (!isAdmin && reservation.UserId != actingUserId)
+                    throw new ForbiddenException("You can only pay for your own reservations.");
+            }
+
+            var payment = new Payment
+            {
+                UserId = userId,
+                ReservationId = dto.ReservationId,
+                Amount = dto.Amount,
+                Status = "Paid",
+                CreatedAt = DateTime.UtcNow
+            };
+
+            await _paymentRepository.AddAsync(payment);
+
+            await _paymentLogRepository.AddAsync(new PaymentLog
+            {
+                PaymentId = payment.Id,
+                Status = "Paid",
+                Message = "Payment completed successfully",
+                CreatedAt = DateTime.UtcNow
+            });
+
+            if (dto.ReservationId.HasValue)
+            {
+                var reservation = await _reservationRepository
+                    .GetByIdAsync(dto.ReservationId.Value);
+
+                if (reservation == null)
+                    throw new Exception("Reservation not found");
+
+                reservation.Status = "Confirmed";
+
+                await _reservationRepository.UpdateAsync(reservation);
+
+                await _historyRepository.AddAsync(new ReservationStatusHistory
+                {
+                    ReservationId = reservation.Id,
+                    Status = "Confirmed",
+                    ChangedAt = DateTime.UtcNow
+                });
+            }
+
+            return payment.Id;
         }
 
-        [HttpGet("{id}")]
-        public async Task<IActionResult> GetById(int id)
+        public async Task<IEnumerable<Payment>> GetAllForUserAsync(int actingUserId, bool isAdmin)
         {
-            if (!User.TryGetUserId(out var userId))
-                return Unauthorized();
+            if (isAdmin)
+                return await _paymentRepository.GetAllAsync();
+            return await _paymentRepository.GetByUserIdAsync(actingUserId);
+        }
 
-            var payment = await _paymentService.GetByIdForUserAsync(id, userId, User.IsAdmin());
+        public async Task<Payment?> GetByIdForUserAsync(int id, int actingUserId, bool isAdmin)
+        {
+            var payment = await _paymentRepository.GetByIdAsync(id);
+            if (payment == null) return null;
+            if (isAdmin || payment.UserId == actingUserId) return payment;
+            return null;
+        }
+
+        public async Task UpdateStatusAsync(UpdatePaymentStatusDTO dto, int actingUserId, bool isAdmin)
+        {
+            if (!isAdmin)
+                throw new ForbiddenException("Only administrators can change payment status.");
+
+            var payment = await _paymentRepository.GetByIdAsync(dto.PaymentId);
 
             if (payment == null)
-                return NotFound();
+                throw new Exception("Payment not found");
 
-            return Ok(payment);
-        }
+            if (payment.Status == "Refunded")
+                throw new Exception("Payment already refunded");
 
-        [HttpPost]
-        public async Task<IActionResult> Create([FromBody] CreatePaymentDTO dto)
-        {
-            if (!User.TryGetUserId(out var userId))
-                return Unauthorized();
+            if (payment.Status == "Failed")
+                throw new Exception("Payment already failed");
 
-            var id = await _paymentService.CreatePaymentAsync(dto, userId, User.IsAdmin());
-            return Ok(new { PaymentId = id });
-        }
+            if (dto.Status != "Refunded" && dto.Status != "Failed")
+                throw new Exception("Invalid payment status");
 
-        [HttpPut("status")]
-        [Authorize(Policy = AuthorizationPolicies.AdminOnly)]
-        public async Task<IActionResult> UpdateStatus([FromBody] UpdatePaymentStatusDTO dto)
-        {
-            if (!User.TryGetUserId(out var userId))
-                return Unauthorized();
+            payment.Status = dto.Status;
+            payment.UpdatedAt = DateTime.UtcNow;
 
-            await _paymentService.UpdateStatusAsync(dto, userId, User.IsAdmin());
-            return Ok("Payment status updated successfully");
+            await _paymentRepository.UpdateAsync(payment);
+
+            await _paymentLogRepository.AddAsync(new PaymentLog
+            {
+                PaymentId = payment.Id,
+                Status = dto.Status,
+                Message = $"Payment status updated to {dto.Status}",
+                CreatedAt = DateTime.UtcNow
+            });
+
+            if (dto.Status == "Refunded" && payment.ReservationId.HasValue)
+            {
+                var reservation = await _reservationRepository
+                    .GetByIdAsync(payment.ReservationId.Value);
+
+                if (reservation != null)
+                {
+                    reservation.Status = "Cancelled";
+                    await _reservationRepository.UpdateAsync(reservation);
+
+                    await _historyRepository.AddAsync(new ReservationStatusHistory
+                    {
+                        ReservationId = reservation.Id,
+                        Status = "Cancelled",
+                        ChangedAt = DateTime.UtcNow
+                    });
+                }
+            }
         }
     }
 }
