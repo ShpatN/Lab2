@@ -15,7 +15,7 @@ import OwnerLayout from "@/components/layouts/OwnerLayout";
 import AdminLayout from "@/components/layouts/AdminLayout";
 
 // Public Pages
-import Index from "@/pages/Index";
+import Index from "@/pages/index";
 import VenuesList from "@/pages/VenuesList";
 import VenueDetails from "@/pages/VenueDetails";
 import EventsList from "@/pages/EventsList";
