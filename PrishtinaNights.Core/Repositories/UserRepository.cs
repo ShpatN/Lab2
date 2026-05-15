@@ -98,5 +98,39 @@ namespace PrishtinaNights.Core.Repositories
                 .Distinct()
                 .ToListAsync();
         }
+
+        public async Task<bool> EmailExistsAsync(string email)
+        {
+            return await _users.AnyAsync(u => u.Email == email);
+        }
+
+        public async Task<int?> GetRoleIdByNameAsync(string roleName)
+        {
+            return await _context.Roles
+                .AsNoTracking()
+                .Where(r => r.Name == roleName)
+                .Select(r => (int?)r.Id)
+                .FirstOrDefaultAsync();
+        }
+
+        public async Task<int?> GetFirstRoleIdAsync()
+        {
+            return await _context.Roles
+                .AsNoTracking()
+                .OrderBy(r => r.Id)
+                .Select(r => (int?)r.Id)
+                .FirstOrDefaultAsync();
+        }
+
+        public async Task AddUserRoleAsync(int userId, int roleId)
+        {
+            await _context.UserRoles.AddAsync(new UserRole
+            {
+                UserId = userId,
+                RoleId = roleId,
+                AssignedAt = DateTime.UtcNow
+            });
+            await _context.SaveChangesAsync();
+        }
     }
 }

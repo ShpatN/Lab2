@@ -1,3 +1,6 @@
+node_modules/
+frontend/node_modules/
+*.lscache
 # Visual Studio
 .vs/
 bin/
@@ -6,6 +9,8 @@ obj/
 # User-specific files
 *.user
 *.suo
+*.userosscache
+*.sln.docstates
 
 # Logs
 *.log
@@ -14,5 +19,39 @@ obj/
 .DS_Store
 Thumbs.db
 
-# Environment variables (IMPORTANT)
+# Environment variables
 .env
+.env.*
+!.env.example
+
+# Node / frontend dependencies
+node_modules/
+frontend/node_modules/
+
+# Build output
+dist/
+frontend/dist/
+build/
+frontend/build/
+
+# Vite / frontend cache
+.vite/
+frontend/.vite/
+
+# Test / coverage output
+coverage/
+frontend/coverage/
+playwright-report/
+frontend/playwright-report/
+test-results/
+frontend/test-results/
+
+# Package manager debug logs
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+
+# Optional editor folders
+.idea/
+.vscode/

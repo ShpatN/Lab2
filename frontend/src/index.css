@@ -1,0 +1,110 @@
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&family=Space+Grotesk:wght@400;500;600;700&display=swap');
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+
+@layer base {
+  :root {
+    --background: 260 20% 6%;
+    --foreground: 0 0% 95%;
+
+    --card: 260 15% 10%;
+    --card-foreground: 0 0% 95%;
+
+    --popover: 260 15% 10%;
+    --popover-foreground: 0 0% 95%;
+
+    --primary: 280 100% 65%;
+    --primary-foreground: 0 0% 100%;
+
+    --secondary: 260 20% 16%;
+    --secondary-foreground: 0 0% 90%;
+
+    --muted: 260 15% 14%;
+    --muted-foreground: 260 10% 55%;
+
+    --accent: 190 100% 50%;
+    --accent-foreground: 0 0% 100%;
+
+    --destructive: 0 84.2% 60.2%;
+    --destructive-foreground: 210 40% 98%;
+
+    --border: 260 15% 18%;
+    --input: 260 15% 18%;
+    --ring: 280 100% 65%;
+
+    --radius: 0.75rem;
+
+    --neon-pink: 330 100% 60%;
+    --neon-blue: 190 100% 50%;
+    --neon-purple: 280 100% 65%;
+    --deep-purple: 260 40% 12%;
+
+    --sidebar-background: 260 20% 8%;
+    --sidebar-foreground: 0 0% 95%;
+    --sidebar-primary: 280 100% 65%;
+    --sidebar-primary-foreground: 0 0% 100%;
+    --sidebar-accent: 260 20% 16%;
+    --sidebar-accent-foreground: 0 0% 95%;
+    --sidebar-border: 260 15% 18%;
+    --sidebar-ring: 280 100% 65%;
+  }
+}
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+
+  body {
+    @apply bg-background text-foreground font-sans antialiased;
+  }
+
+  h1, h2, h3, h4, h5, h6 {
+    @apply font-display;
+  }
+}
+
+@layer components {
+  .neon-glow {
+    box-shadow: 0 0 20px hsl(var(--neon-purple) / 0.3),
+                0 0 60px hsl(var(--neon-purple) / 0.1);
+  }
+
+  .neon-glow-pink {
+    box-shadow: 0 0 20px hsl(var(--neon-pink) / 0.3),
+                0 0 60px hsl(var(--neon-pink) / 0.1);
+  }
+
+  .neon-text {
+    text-shadow: 0 0 20px hsl(var(--neon-purple) / 0.5),
+                 0 0 40px hsl(var(--neon-purple) / 0.2);
+  }
+
+  .glass {
+    @apply bg-card/60 backdrop-blur-xl border border-border/50;
+  }
+
+  .gradient-primary {
+    background: linear-gradient(135deg, hsl(var(--neon-purple)), hsl(var(--neon-pink)));
+  }
+
+  .gradient-hero {
+    background: linear-gradient(180deg, 
+      hsl(var(--neon-purple) / 0.15) 0%, 
+      hsl(var(--background)) 100%
+    );
+  }
+}
+
+@layer utilities {
+  .hover-lift {
+    @apply transition-all duration-300 ease-out;
+  }
+  .hover-lift:hover {
+    transform: translateY(-4px);
+    box-shadow: 0 12px 40px hsl(var(--neon-purple) / 0.2);
+  }
+}

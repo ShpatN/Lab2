@@ -11,6 +11,8 @@ public partial class ReservationStatusHistory
 
     public int ReservationId { get; set; }
 
+    public DateTime CreatedAt { get; set; }
+
     public string Status { get; set; }
 
     public DateTime ChangedAt { get; set; }

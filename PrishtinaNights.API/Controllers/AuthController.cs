@@ -5,7 +5,7 @@ using PrishtinaNights.Core.Services.Interfaces;
 namespace PrishtinaNights.API.Controllers
 {
     [ApiController]
-    [Route("api/[controller]")]
+    [Route("api/auth")]
     public class AuthController : ControllerBase
     {
         private readonly IAuthService _authService;
@@ -17,24 +17,48 @@ namespace PrishtinaNights.API.Controllers
 
         // ================= LOGIN =================
         [HttpPost("login")]
-        public async Task<IActionResult> Login([FromBody] LoginRequestDTO request)
+        [Consumes("application/json")]
+        public async Task<IActionResult> Login([FromBody] LoginRequestDTO? request)
         {
+            if (request is null)
+                return BadRequest(new { message = "Send a JSON body with email and password. Content-Type must be application/json." });
+
             var result = await _authService.LoginAsync(request);
+            return Ok(result);
+        }
+
+        // ================= REGISTER =================
+        [HttpPost("register")]
+        [Consumes("application/json")]
+        public async Task<IActionResult> Register([FromBody] RegisterRequestDTO? request)
+        {
+            if (request is null)
+                return BadRequest(new { message = "Send a JSON body with email, password, firstName, and lastName. Content-Type must be application/json." });
+
+            var result = await _authService.RegisterAsync(request);
             return Ok(result);
         }
 
         // ================= REFRESH =================
         [HttpPost("refresh")]
-        public async Task<IActionResult> Refresh([FromBody] RefreshTokenRequestDTO request)
+        [Consumes("application/json")]
+        public async Task<IActionResult> Refresh([FromBody] RefreshTokenRequestDTO? request)
         {
+            if (request is null)
+                return BadRequest(new { message = "Send a JSON body with refreshToken. Content-Type must be application/json." });
+
             var result = await _authService.RefreshTokenAsync(request);
             return Ok(result);
         }
 
         // ================= LOGOUT =================
         [HttpPost("logout")]
-        public async Task<IActionResult> Logout([FromBody] RefreshTokenRequestDTO request)
+        [Consumes("application/json")]
+        public async Task<IActionResult> Logout([FromBody] RefreshTokenRequestDTO? request)
         {
+            if (request is null)
+                return BadRequest(new { message = "Send a JSON body with refreshToken. Content-Type must be application/json." });
+
             await _authService.LogoutAsync(request);
             return Ok("Logged out successfully");
         }
