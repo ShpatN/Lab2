@@ -28,26 +28,29 @@ const InnerCheckout = ({
     if (!stripe || !elements || !user) return;
     setIsPaying(true);
     setError("");
+    try {
+      const result = await stripe.confirmPayment({
+        elements,
+        redirect: "if_required",
+      });
 
-    const result = await stripe.confirmPayment({
-      elements,
-      redirect: "if_required",
-    });
+      if (result.error) {
+        setError(result.error.message ?? "Payment failed.");
+        return;
+      }
 
-    if (result.error) {
-      setError(result.error.message ?? "Payment failed.");
+      await createPaymentRecord({
+        userId: user.id,
+        reservationId,
+        amount: Number(amount),
+      });
+      toast.success("Payment completed successfully.");
+      onPaid();
+    } catch (e) {
+      setError(e instanceof Error ? e.message : "Could not record payment.");
+    } finally {
       setIsPaying(false);
-      return;
     }
-
-    await createPaymentRecord({
-      userId: user.id,
-      reservationId,
-      amount: Number(amount),
-    });
-    toast.success("Payment completed successfully.");
-    onPaid();
-    setIsPaying(false);
   };
 
   return (
