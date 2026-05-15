@@ -1,4 +1,6 @@
-# Visual Studio / .NET
+node_modules/
+frontend/node_modules/
+# Visual Studio
 .vs/
 bin/
 obj/
