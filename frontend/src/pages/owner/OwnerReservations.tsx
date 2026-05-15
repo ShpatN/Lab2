@@ -1,5 +1,6 @@
 import { useReservations, useUpdateReservationStatus } from "@/hooks/useReservations";
 import ExportActions from "@/components/exports/ExportActions";
+import { toast } from "sonner";
 
 const statusColors: Record<string, string> = {
   accepted: "bg-emerald-500/20 text-emerald-400",
@@ -15,7 +16,14 @@ const OwnerReservations = () => {
   const handleStatusChange = (reservationId: number, status: "accepted" | "declined") => {
     updateStatusMutation.mutate(
       { reservationId, body: { status } },
-      undefined,
+      {
+        onSuccess: () => {
+          toast.success(status === "accepted" ? "Reservation accepted." : "Reservation declined.");
+        },
+        onError: (e) => {
+          toast.error(e instanceof Error ? e.message : "Could not update reservation.");
+        },
+      },
     );
   };
 
@@ -71,7 +79,7 @@ const OwnerReservations = () => {
                     </span>
                   </td>
                   <td className="p-4">
-                    {r.status === "pending" && (
+                    {(r.status ?? "").toLowerCase() === "pending" && (
                       <div className="flex gap-2">
                         <button
                           onClick={() => handleStatusChange(r.id, "accepted")}

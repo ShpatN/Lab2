@@ -4,9 +4,11 @@ using Microsoft.Extensions.Options;
 using Microsoft.IdentityModel.Tokens;
 using MongoDB.Driver;
 using System.Text;
+using PrishtinaNights.API.Authorization;
 using PrishtinaNights.API.Hubs;
 using PrishtinaNights.API.Middleware;
 using PrishtinaNights.API.Notifications;
+using PrishtinaNights.Core;
 using PrishtinaNights.Core.Data;
 using PrishtinaNights.Core.Repositories.Interfaces;
 using PrishtinaNights.Core.Repositories;
@@ -101,6 +103,12 @@ builder.Services.AddAuthorization(options =>
 
     options.AddPolicy("CanDeleteUser", policy =>
         policy.RequireClaim("permission", "CanDeleteUser"));
+
+    options.AddPolicy(AuthorizationPolicies.AdminOnly, policy =>
+        policy.RequireRole(AppRoles.Admin));
+
+    options.AddPolicy(AuthorizationPolicies.VenueOwnerOrAdmin, policy =>
+        policy.RequireRole(AppRoles.Admin, AppRoles.VenueOwner, AppRoles.Owner));
 });
 
 // Swagger (ONLY ONCE + JWT)

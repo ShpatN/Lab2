@@ -1,8 +1,8 @@
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { Elements, PaymentElement, useElements, useStripe } from "@stripe/react-stripe-js";
 import { loadStripe, type StripeElementsOptions } from "@stripe/stripe-js";
 import { toast } from "sonner";
-import { createPaymentIntent, createPaymentRecord } from "@/lib/api";
+import { apiUrl, createPaymentIntent, createPaymentRecord } from "@/lib/api";
 import { useAuth } from "@/context/AuthContext";
 
 type Props = {
@@ -10,9 +10,6 @@ type Props = {
   amountCents: number;
   onPaid: () => void;
 };
-
-const publishableKey = import.meta.env.VITE_STRIPE_PUBLISHABLE_KEY as string | undefined;
-const stripePromise = publishableKey ? loadStripe(publishableKey) : null;
 
 const InnerCheckout = ({
   reservationId,
@@ -72,8 +69,37 @@ const InnerCheckout = ({
 };
 
 const ReservationCheckout = ({ reservationId, amountCents, onPaid }: Props) => {
+  const envPk = (import.meta.env.VITE_STRIPE_PUBLISHABLE_KEY as string | undefined)?.trim() ?? "";
+  const [publishableKey, setPublishableKey] = useState(envPk);
+  const [publishableKeyResolved, setPublishableKeyResolved] = useState(!!envPk);
   const [clientSecret, setClientSecret] = useState<string | null>(null);
   const [error, setError] = useState("");
+
+  useEffect(() => {
+    if (envPk) return;
+    let cancelled = false;
+    void (async () => {
+      try {
+        const res = await fetch(apiUrl("/api/stripe/publishable-key"));
+        if (!res.ok || cancelled) return;
+        const data = (await res.json()) as { publishableKey?: string };
+        const k = data.publishableKey?.trim() ?? "";
+        if (!cancelled) setPublishableKey(k);
+      } catch {
+        if (!cancelled) setPublishableKey("");
+      } finally {
+        if (!cancelled) setPublishableKeyResolved(true);
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [envPk]);
+
+  const stripePromise = useMemo(
+    () => (publishableKey ? loadStripe(publishableKey) : null),
+    [publishableKey],
+  );
 
   useEffect(() => {
     let cancelled = false;
@@ -91,8 +117,18 @@ const ReservationCheckout = ({ reservationId, amountCents, onPaid }: Props) => {
     };
   }, [amountCents]);
 
+  if (!publishableKeyResolved) {
+    return <p className="text-sm text-muted-foreground">Loading payment configuration…</p>;
+  }
+
   if (!publishableKey || !stripePromise) {
-    return <p className="text-sm text-amber-400">Stripe publishable key is missing. Set `VITE_STRIPE_PUBLISHABLE_KEY`.</p>;
+    return (
+      <p className="text-sm text-amber-400">
+        Stripe publishable key is missing. Set <code className="text-xs">VITE_STRIPE_PUBLISHABLE_KEY</code> in{" "}
+        <code className="text-xs">frontend/.env</code> or <code className="text-xs">Stripe:PublishableKey</code> in
+        backend configuration.
+      </p>
+    );
   }
 
   if (error) return <p className="text-sm text-red-400">{error}</p>;

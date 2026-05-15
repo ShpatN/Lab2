@@ -34,7 +34,6 @@ const OwnerEventForm = ({ mode }: Props) => {
   const [name, setName] = useState("");
   const [description, setDescription] = useState("");
   const [startDate, setStartDate] = useState("");
-  const [endDate, setEndDate] = useState("");
   const [imageUrl, setImageUrl] = useState("");
   const [isActive, setIsActive] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
@@ -42,7 +41,7 @@ const OwnerEventForm = ({ mode }: Props) => {
 
   useEffect(() => {
     if (!editing) {
-      setVenueId((prev) => prev || myVenues[0]?.id || "");
+      setVenueId((prev) => prev || String(myVenues[0]?.id ?? ""));
       return;
     }
     if (!existing) return;
@@ -51,7 +50,6 @@ const OwnerEventForm = ({ mode }: Props) => {
     setDescription(existing.description);
     setStartDate(existing.startDate.slice(0, 16));
     setCategoryId(existing.categoryId ? String(existing.categoryId) : "");
-    setEndDate(existing.endDate ? existing.endDate.slice(0, 16) : "");
     setImageUrl(getEventImageOverride(existing.id) ?? "");
     setIsActive(existing.isActive);
   }, [editing, existing, categories, myVenues]);
@@ -79,7 +77,7 @@ const OwnerEventForm = ({ mode }: Props) => {
         name: name.trim(),
         description: description.trim(),
         startDate: new Date(startDate).toISOString(),
-        endDate: endDate ? new Date(endDate).toISOString() : null,
+        endDate: editing && existing?.endDate ? existing.endDate : null,
         isActive,
       };
       if (editing && existing) {
@@ -135,8 +133,10 @@ const OwnerEventForm = ({ mode }: Props) => {
           alt="Event preview"
           className="w-full h-40 object-cover rounded-xl border border-border"
         />
-        <input type="datetime-local" value={startDate} onChange={(e) => setStartDate(e.target.value)} className="w-full px-4 py-3 rounded-xl bg-card border border-border text-foreground" required />
-        <input type="datetime-local" value={endDate} onChange={(e) => setEndDate(e.target.value)} className="w-full px-4 py-3 rounded-xl bg-card border border-border text-foreground" />
+        <div>
+          <label className="block text-xs text-muted-foreground mb-1">Event start</label>
+          <input type="datetime-local" value={startDate} onChange={(e) => setStartDate(e.target.value)} className="w-full px-4 py-3 rounded-xl bg-card border border-border text-foreground" required />
+        </div>
         <label className="flex items-center gap-2 text-sm text-foreground">
           <input type="checkbox" checked={isActive} onChange={(e) => setIsActive(e.target.checked)} />
           Active

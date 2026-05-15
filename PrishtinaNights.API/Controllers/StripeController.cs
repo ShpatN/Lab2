@@ -16,6 +16,15 @@ public class StripeController : ControllerBase
         _configuration = configuration;
     }
 
+    /// <summary>Returns the Stripe publishable key for Stripe.js (safe for browsers).</summary>
+    [HttpGet("publishable-key")]
+    [AllowAnonymous]
+    public IActionResult GetPublishableKey()
+    {
+        var pk = _configuration["Stripe:PublishableKey"];
+        return Ok(new { publishableKey = pk ?? string.Empty });
+    }
+
     /// <summary>
     /// Creates a Stripe PaymentIntent. Frontend uses clientSecret with Stripe.js.
     /// Set Stripe:SecretKey (User Secrets in dev) before calling.
